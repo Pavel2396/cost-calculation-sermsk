@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расчет стоимости ремонта</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 5px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+
+        .item-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .item-row input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .item-row input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .item-row input[type="number"] {
+            max-width: 200px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            padding: 12px 18px;
+        }
+
+        .btn-remove:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            font-size: 18px;
+            padding: 15px 40px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(17, 153, 142, 0.4);
+        }
+
+        .total-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .total-amount {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Блок с готовым расчетом */
+        #preview-container {
+            display: none;
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #667eea;
+            animation: slideIn 0.4s ease;
+        }
+
+        #preview-container h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 1.8em;
+        }
+
+        .preview-image-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        #preview-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: block;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            font-size: 17px;
+            padding: 15px 30px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.55);
+        }
+
+        .btn-download-alt {
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            color: white;
+            font-size: 15px;
+            padding: 13px 30px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(100, 116, 139, 0.35);
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-download-alt:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(100, 116, 139, 0.5);
+        }
+
+        .download-hint {
+            text-align: center;
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 8px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Расчет стоимости ремонта</h1>
+
+        <div class="section">
+            <h2 class="section-title">Работы</h2>
+            <div id="works-container">
+                <div class="item-row">
+                    <input type="text" placeholder="Название работы" class="work-name">
+                    <input type="number" placeholder="Цена" class="work-price">
+                    <button class="btn btn-remove" onclick="removeRow(this)">✕</button>
+                </div>
+            </div>
+            <button class="btn btn-add" onclick="addWork()">+ Добавить работу</button>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Запчасти</h2>
+            <div id="parts-container">
+                <div class="item-row">
+                    <input type="text" placeholder="Название запчасти" class="part-name">
+                    <input type="number" placeholder="Цена" class="part-price">
+                    <button class="btn btn-remove" onclick="removeRow(this)">✕</button>
+                </div>
+            </div>
+            <button class="btn btn-add" onclick="addPart()">+ Добавить запчасть</button>
+        </div>
+
+        <div class="total-section">
+            <div style="font-size: 1.2em;">Итоговая сумма:</div>
+            <div class="total-amount" id="total-amount">0 ₽</div>
+        </div>
+
+        <button class="btn btn-generate" onclick="generateCalculation()">📄 Сформировать расчет</button>
+
+        <div id="preview-container">
+            <h2>📋 Готовый расчет</h2>
+            <div class="preview-image-wrapper">
+                <img id="preview-image" alt="Расчет">
+            </div>
+            <div class="download-buttons">
+                <button class="btn-download" onclick="downloadImage()">💾 Скачать изображение для отправки клиенту</button>
+                <button class="btn-download-alt" onclick="openImageInNewTab()">🔗 Открыть изображение в новой вкладке (если не скачивается)</button>
+            </div>
+            <div class="download-hint">Если скачивание не происходит — откройте изображение в новой вкладке и сохраните через правый клик мыши</div>
+        </div>
+    </div>
+
+    <script>
+        let currentImageDataUrl = null;
+        let currentCanvas = null;
+
+        function addWork() {
+            const container = document.getElementById('works-container');
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <input type="text" placeholder="Название работы" class="work-name">
+                <input type="number" placeholder="Цена" class="work-price">
+                <button class="btn btn-remove" onclick="removeRow(this)">✕</button>
+            `;
+            container.appendChild(row);
+            updateTotal();
+        }
+
+        function addPart() {
+            const container = document.getElementById('parts-container');
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <input type="text" placeholder="Название запчасти" class="part-name">
+                <input type="number" placeholder="Цена" class="part-price">
+                <button class="btn btn-remove" onclick="removeRow(this)">✕</button>
+            `;
+            container.appendChild(row);
+            updateTotal();
+        }
+
+        function removeRow(button) {
+            const row = button.parentElement;
+            const container = row.parentElement;
+            if (container.children.length > 1) {
+                row.remove();
+                updateTotal();
+            }
+        }
+
+        function updateTotal() {
+            let total = 0;
+            
+            document.querySelectorAll('.work-price').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            
+            document.querySelectorAll('.part-price').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            
+            document.getElementById('total-amount').textContent = total.toLocaleString('ru-RU') + ' ₽';
+        }
+
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('work-price') || e.target.classList.contains('part-price')) {
+                updateTotal();
+            }
+        });
+
+        function drawCalculationImage(works, parts, totalAmount) {
+            const canvas = document.createElement('canvas');
+            const scale = 2;
+            const width = 600;
+            const ctx = canvas.getContext('2d');
+
+            const padding = 22;
+            const contentWidth = width - padding * 2;
+            let y = padding;
+
+            function drawRoundedRect(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+            }
+
+            function drawGradientRect(x, y, w, h, color1, color2, radius = 0) {
+                const grad = ctx.createLinearGradient(x, y, x + w, y + h);
+                grad.addColorStop(0, color1);
+                grad.addColorStop(1, color2);
+                ctx.fillStyle = grad;
+                if (radius > 0) {
+                    drawRoundedRect(x, y, w, h, radius);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(x, y, w, h);
+                }
+            }
+
+            function wrapText(text, maxWidth, font) {
+                ctx.font = font;
+                const words = text.split(' ');
+                const lines = [];
+                let currentLine = '';
+                for (const word of words) {
+                    const testLine = currentLine ? currentLine + ' ' + word : word;
+                    const metrics = ctx.measureText(testLine);
+                    if (metrics.width > maxWidth && currentLine) {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                if (currentLine) lines.push(currentLine);
+                return lines;
+            }
+
+            let tempY = padding;
+
+            tempY += 22;
+            tempY += 16;
+            tempY += 2;
+            tempY += 16;
+
+            const greetingLines1 = wrapText('Добрый день, уважаемый клиент!', contentWidth - 24, '11px Segoe UI');
+            const greetingLines2 = wrapText('Направляем Вам расчет по стоимости ремонта автомобиля.', contentWidth - 24, '11px Segoe UI');
+            const greetingHeight = (greetingLines1.length + greetingLines2.length) * 16 + 22;
+            tempY += greetingHeight;
+            tempY += 16;
+
+            if (works.length > 0) {
+                tempY += 16;
+                tempY += 10;
+                tempY += 26;
+                works.forEach(w => {
+                    const lines = wrapText(w.name, contentWidth - 120, '10px Segoe UI');
+                    tempY += Math.max(lines.length * 14, 24);
+                });
+                tempY += 26;
+                tempY += 14;
+            }
+
+            if (parts.length > 0) {
+                tempY += 16;
+                tempY += 10;
+                tempY += 26;
+                parts.forEach(p => {
+                    const lines = wrapText(p.name, contentWidth - 120, '10px Segoe UI');
+                    tempY += Math.max(lines.length * 14, 24);
+                });
+                tempY += 26;
+                tempY += 14;
+            }
+
+            tempY += 58;
+            tempY += 16;
+
+            tempY += 32;
+            tempY += padding;
+
+            const totalHeight = tempY;
+
+            canvas.width = width * scale;
+            canvas.height = totalHeight * scale;
+            canvas.style.width = width + 'px';
+            canvas.style.height = totalHeight + 'px';
+
+            ctx.scale(scale, scale);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, totalHeight);
+
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 17px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Расчет стоимости ремонта', width / 2, y + 10);
+            y += 22;
+
+            const lineGrad = ctx.createLinearGradient(padding, y, width - padding, y);
+            lineGrad.addColorStop(0, '#667eea');
+            lineGrad.addColorStop(1, '#764ba2');
+            ctx.strokeStyle = lineGrad;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, y);
+            ctx.lineTo(width - padding, y);
+            ctx.stroke();
+            y += 16;
+
+            drawGradientRect(padding, y, contentWidth, greetingHeight, '#667eea', '#764ba2', 6);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            let gy = y + 11;
+            greetingLines1.forEach(line => {
+                ctx.fillText(line, width / 2, gy);
+                gy += 16;
+            });
+            greetingLines2.forEach(line => {
+                ctx.fillText(line, width / 2, gy);
+                gy += 16;
+            });
+            y += greetingHeight + 16;
+
+            function drawTable(title, items) {
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 13px Segoe UI';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(title, padding, y);
+                y += 16;
+
+                const headerHeight = 26;
+
+                drawGradientRect(padding, y, contentWidth, headerHeight, '#667eea', '#764ba2', 4);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px Segoe UI';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+                ctx.fillText('Наименование', padding + 10, y + headerHeight / 2);
+                ctx.textAlign = 'right';
+                ctx.fillText('Стоимость', width - padding - 10, y + headerHeight / 2);
+                y += headerHeight;
+
+                let total = 0;
+                items.forEach((item, idx) => {
+                    ctx.font = '10px Segoe UI';
+                    const nameLines = wrapText(item.name, contentWidth - 120, '10px Segoe UI');
+                    const rowHeight = Math.max(nameLines.length * 14, 24);
+
+                    if (idx % 2 === 1) {
+                        ctx.fillStyle = '#f8f9fa';
+                        ctx.fillRect(padding, y, contentWidth, rowHeight);
+                    }
+
+                    ctx.strokeStyle = '#e9ecef';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y + rowHeight);
+                    ctx.lineTo(width - padding, y + rowHeight);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    let ly = y + (rowHeight - nameLines.length * 14) / 2;
+                    nameLines.forEach(line => {
+                        ctx.fillText(line, padding + 10, ly);
+                        ly += 14;
+                    });
+
+                    ctx.fillStyle = '#2563eb';
+                    ctx.font = 'bold 10px Segoe UI';
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.price.toLocaleString('ru-RU') + ' ₽', width - padding - 10, y + rowHeight / 2);
+
+                    y += rowHeight;
+                    total += item.price;
+                });
+
+                const totalRowHeight = 26;
+                ctx.fillStyle = '#e8f5e9';
+                ctx.fillRect(padding, y, contentWidth, totalRowHeight);
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 11px Segoe UI';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Итого по ' + (title === 'Работы' ? 'работам:' : 'запчастям:'), padding + 10, y + totalRowHeight / 2);
+                ctx.fillStyle = '#2563eb';
+                ctx.textAlign = 'right';
+                ctx.fillText(total.toLocaleString('ru-RU') + ' ₽', width - padding - 10, y + totalRowHeight / 2);
+                y += totalRowHeight + 14;
+            }
+
+            if (works.length > 0) drawTable('Работы', works);
+            if (parts.length > 0) drawTable('Запчасти', parts);
+
+            const totalBlockHeight = 58;
+            drawGradientRect(padding, y, contentWidth, totalBlockHeight, '#11998e', '#38ef7d', 6);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '13px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('Итоговая сумма:', width / 2, y + 10);
+            ctx.font = 'bold 22px Segoe UI';
+            ctx.fillText(totalAmount.toLocaleString('ru-RU') + ' ₽', width / 2, y + 28);
+            y += totalBlockHeight + 16;
+
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('Благодарим за доверие!', width / 2, y);
+            ctx.fillText('С уважением, команда сервиса Fresh Москва', width / 2, y + 15);
+
+            return canvas;
+        }
+
+        function generateCalculation() {
+            const works = [];
+            document.querySelectorAll('#works-container .item-row').forEach(row => {
+                const name = row.querySelector('.work-name').value.trim();
+                const price = parseFloat(row.querySelector('.work-price').value) || 0;
+                if (name && price > 0) {
+                    works.push({ name, price });
+                }
+            });
+
+            const parts = [];
+            document.querySelectorAll('#parts-container .item-row').forEach(row => {
+                const name = row.querySelector('.part-name').value.trim();
+                const price = parseFloat(row.querySelector('.part-price').value) || 0;
+                if (name && price > 0) {
+                    parts.push({ name, price });
+                }
+            });
+
+            if (works.length === 0 && parts.length === 0) {
+                alert('Добавьте хотя бы одну работу или запчасть');
+                return;
+            }
+
+            let totalAmount = 0;
+            works.forEach(w => totalAmount += w.price);
+            parts.forEach(p => totalAmount += p.price);
+
+            try {
+                const canvas = drawCalculationImage(works, parts, totalAmount);
+                currentCanvas = canvas;
+                const dataUrl = canvas.toDataURL('image/png');
+                currentImageDataUrl = dataUrl;
+
+                const previewImage = document.getElementById('preview-image');
+                const previewContainer = document.getElementById('preview-container');
+                
+                previewImage.src = dataUrl;
+                previewContainer.style.display = 'block';
+                
+                setTimeout(() => {
+                    previewContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            } catch (err) {
+                console.error('Ошибка формирования отчёта:', err);
+                alert('Произошла ошибка при формировании отчета: ' + err.message);
+            }
+        }
+
+        // Основная функция скачивания - использует FileSaver.js
+        function downloadImage() {
+            if (!currentCanvas || !currentImageDataUrl) {
+                alert('Сначала сформируйте расчет');
+                return;
+            }
+
+            try {
+                // Способ 1: FileSaver.js (самый надёжный)
+                if (typeof saveAs === 'function') {
+                    currentCanvas.toBlob(function(blob) {
+                        if (blob) {
+                            saveAs(blob, 'расчет-ремонта.png');
+                        } else {
+                            fallbackDownload();
+                        }
+                    }, 'image/png');
+                } else {
+                    fallbackDownload();
+                }
+            } catch (err) {
+                console.error('Ошибка скачивания:', err);
+                fallbackDownload();
+            }
+        }
+
+        // Запасной способ скачивания
+        function fallbackDownload() {
+            try {
+                const arr = currentImageDataUrl.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                const blob = new Blob([u8arr], { type: mime });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'расчет-ремонта.png';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                
+                // Создаём событие клика вручную
+                const clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                });
+                link.dispatchEvent(clickEvent);
+
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 500);
+            } catch (e) {
+                console.error('Fallback download failed:', e);
+                openImageInNewTab();
+            }
+        }
+
+        // Открытие в новой вкладке (крайний случай)
+        function openImageInNewTab() {
+            if (!currentImageDataUrl) {
+                alert('Сначала сформируйте расчет');
+                return;
+            }
+            const newWindow = window.open('', '_blank');
+            if (newWindow) {
+                newWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Расчет ремонта</title>
+                        <style>
+                            body { margin: 0; padding: 20px; background: #f0f0f0; display: flex; flex-direction: column; align-items: center; font-family: Arial, sans-serif; }
+                            h2 { color: #2c3e50; }
+                            img { max-width: 100%; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+                            .hint { background: white; padding: 15px 25px; border-radius: 10px; margin-top: 20px; color: #666; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+                            .btn { margin-top: 20px; padding: 12px 30px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600; }
+                            .btn:hover { background: #1e40af; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Расчет стоимости ремонта</h2>
+                        <img src="${currentImageDataUrl}" alt="Расчет">
+                        <div class="hint">
+                            💡 <strong>Чтобы сохранить изображение:</strong><br>
+                            Нажмите правой кнопкой мыши на изображение выше → "Сохранить изображение как..."
+                        </div>
+                        <button class="btn" onclick="downloadDirect()">💾 Скачать файл</button>
+                        <script>
+                            function downloadDirect() {
+                                const link = document.createElement('a');
+                                link.href = "${currentImageDataUrl}";
+                                link.download = "расчет-ремонта.png";
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                newWindow.document.close();
+            } else {
+                alert('Пожалуйста, разрешите всплывающие окна для этого сайта, чтобы открыть изображение в новой вкладке.');
+            }
+        }
+    </script>
+</body>
+</html>
